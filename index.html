@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,7 +28,7 @@ body{
   animation:fadeIn .8s ease;
 }
 
-h1{font-size:1.7rem;margin-bottom:10px;color:#4a1c2f;}
+h1{font-size:1.7rem;color:#4a1c2f;}
 p{font-size:1rem;color:#5c2a3a;}
 
 input{
@@ -35,7 +36,6 @@ input{
   width:80%;
   border-radius:10px;
   border:1px solid #ccc;
-  font-size:1rem;
   margin-top:10px;
 }
 
@@ -46,19 +46,10 @@ button{
   border-radius:20px;
   background:#ff4f81;
   color:white;
-  font-size:1rem;
   cursor:pointer;
 }
 button:hover{background:#e84370;}
 
-.error{
-  margin-top:10px;
-  color:#b0003a;
-  font-style:italic;
-  animation:shake .4s;
-}
-
-/* 🎂 Cake & candles */
 .cake{font-size:2rem;margin-top:15px;}
 
 .candle{
@@ -74,13 +65,12 @@ button:hover{background:#e84370;}
   opacity:.7;
 }
 
-/* 💨 Smoke */
+/* Smoke */
 .smoke{
   position:absolute;
   top:-10px;
   left:50%;
   transform:translateX(-50%);
-  font-size:.9rem;
   animation:smokeUp .8s ease forwards;
   pointer-events:none;
 }
@@ -100,20 +90,30 @@ button:hover{background:#e84370;}
   to{opacity:1;transform:scale(1)}
 }
 
-@keyframes shake{
-  0%{transform:translateX(0)}
-  25%{transform:translateX(-5px)}
-  50%{transform:translateX(5px)}
-  75%{transform:translateX(-5px)}
-  100%{transform:translateX(0)}
+/* Popup */
+.popup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
 
-/* 📖 Diary */
+.popupBox{
+  background:white;
+  padding:22px;
+  border-radius:16px;
+  text-align:center;
+  width:80%;
+  max-width:300px;
+}
+
+/* Diary */
 .diary{
   background:#fff7f9;
-  border-radius:14px;
-  padding:20px;
-  box-shadow:inset 0 0 10px rgba(0,0,0,.1);
+  padding:22px;
+  border-radius:16px;
   cursor:pointer;
 }
 
@@ -122,58 +122,54 @@ button:hover{background:#e84370;}
   color:#7a2d44;
 }
 
-.diary p{
-  margin-top:10px;
-  font-style:italic;
-}
-
-.tap{font-size:.9rem;color:#999;margin-top:5px;}
-
+.tap{font-size:.9rem;color:#888;margin-top:5px;}
 </style>
 </head>
 
 <body>
+
+<!-- 🎶 Background Music -->
+<audio id="bgMusic" loop>
+  <source src="Ve Haaniyaan Web.mp3" type="audio/mpeg">
+</audio>
+
 <div class="card" id="app"></div>
 
 <script>
 const app = document.getElementById("app");
 
-/* 🔊 Soft whoosh sound */
-function whoosh(){
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const o = ctx.createOscillator();
-  const g = ctx.createGain();
-  o.type = "sine";
-  o.frequency.value = 600;
-  g.gain.value = 0.15;
-  o.connect(g).connect(ctx.destination);
-  o.start();
-  o.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-  o.stop(ctx.currentTime + 0.3);
+let blown = 0;
+let totalCandles = 0;
+let songAsked = false;
+let page = 0;
+
+/* 🎶 Play music */
+function playMusic(){
+  const m = document.getElementById("bgMusic");
+  m.volume = 0.4;
+  m.play().catch(()=>{});
 }
 
 /* 🔐 Name */
 function askName(){
-  app.innerHTML=`
+  app.innerHTML = `
     <h1>Hey Beautiful 💕</h1>
     <p>Enter your nickname ✨</p>
     <input id="name">
     <br>
     <button onclick="checkName()">Continue 💖</button>
-    <div class="error" id="err"></div>
   `;
 }
 
 function checkName(){
-  const v=document.getElementById("name").value.trim().toLowerCase();
-  if(v==="the prenita"){ askAge(); }
-  else document.getElementById("err").innerText="Try again, my love 💗";
+  if(document.getElementById("name").value.trim().toLowerCase()==="the prenita"){
+    askAge();
+  }
 }
 
 /* 🎂 Age */
 function askAge(){
-  app.innerHTML=`
+  app.innerHTML = `
     <h1>Hello, The Prenita 💫</h1>
     <p>Your age? 🎂</p>
     <input type="number" id="age">
@@ -182,19 +178,19 @@ function askAge(){
   `;
 }
 
-let blown=0, totalCandles=0;
-
 function showCake(){
-  const age=parseInt(document.getElementById("age").value);
-  if(!age||age<1||age>120) return;
+  const age = parseInt(document.getElementById("age").value);
+  if(!age || age<1 || age>120) return;
 
-  totalCandles=age; blown=0;
-  let candles="";
+  totalCandles = age;
+  blown = 0;
+
+  let candles = "";
   for(let i=0;i<age;i++){
-    candles+=`<span class="candle" data-blown="false" onclick="blow(this)">🕯️</span>`;
+    candles += `<span class="candle" data-blown="false" onclick="blow(this)">🕯️</span>`;
   }
 
-  app.innerHTML=`
+  app.innerHTML = `
     <h1>Happy Birthday 💖</h1>
     <p>Tap the candles ✨</p>
     <div class="cake">🎂<br>${candles}</div>
@@ -204,24 +200,57 @@ function showCake(){
 /* 💨 Blow candle */
 function blow(c){
   if(c.dataset.blown==="true") return;
+
   c.dataset.blown="true";
   c.classList.add("blown");
-  whoosh();
 
   const smoke=document.createElement("span");
   smoke.className="smoke";
   smoke.innerText="💨";
   c.appendChild(smoke);
-  c.innerText="🕯️";
 
   blown++;
+
+  if(blown===1 && !songAsked){
+    songAsked = true;
+    askSongPopup();
+    return;
+  }
+
   if(blown===totalCandles){
     setTimeout(openDiary,800);
   }
 }
 
+/* 💬 Song popup */
+function askSongPopup(){
+  const pop = document.createElement("div");
+  pop.className = "popup";
+  pop.innerHTML = `
+    <div class="popupBox">
+      <p>Do you want to play a song? 🎶</p>
+      <button onclick="yesSong()">Yes 💖</button>
+      <button onclick="noSong()">Maybe later 🙂</button>
+    </div>
+  `;
+  document.body.appendChild(pop);
+}
+
+function yesSong(){
+  playMusic();
+  closePopup();
+}
+
+function noSong(){
+  closePopup();
+}
+
+function closePopup(){
+  document.querySelector(".popup")?.remove();
+}
+
 /* 📖 Diary */
-const reasons=[
+const reasons = [
 "I like you because you’re kind, even when no one is watching.",
 "I like you because you listen, not just hear.",
 "I like you because you’re real—no fake vibes.",
@@ -239,10 +268,8 @@ const reasons=[
 "And honestly… I like you because you’re you."
 ];
 
-let page=0;
-
 function openDiary(){
-  app.innerHTML=`
+  app.innerHTML = `
     <div class="diary" onclick="nextPage()">
       <h2>15 Reasons Why I Like You</h2>
       <div class="tap">(tap to open)</div>
@@ -252,7 +279,7 @@ function openDiary(){
 
 function nextPage(){
   if(page>=reasons.length) return;
-  app.innerHTML=`
+  app.innerHTML = `
     <div class="diary" onclick="nextPage()">
       <h2>Page ${page+1}</h2>
       <p>${reasons[page]}</p>
@@ -264,5 +291,6 @@ function nextPage(){
 
 askName();
 </script>
+
 </body>
 </html>
